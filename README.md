@@ -10,6 +10,8 @@ The initial vertical slice provides:
 - A FastAPI service with health and evidence-manifest endpoints
 - SHA-256 hashing for evidence files
 - A tamper-evident manifest model suitable for later chain-of-custody work
+- Deterministic timeline reconstruction across multiple evidence sources
+- Hash-chained chain-of-custody entries with integrity verification
 - Focused tests for hashing and API behavior
 
 This project is intended for authorized investigations and synthetic lab data.
@@ -25,3 +27,13 @@ uvicorn forensicgraph.api:app --reload
 ```
 
 The API is then available at `http://127.0.0.1:8000/docs`.
+
+## Initial API
+
+- `POST /v1/evidence/hash` — hash a local lab evidence file
+- `POST /v1/timeline/reconstruct` — normalize and sort investigation events
+- `POST /v1/custody` — append a chain-of-custody entry
+- `GET /v1/custody/verify` — verify the in-memory custody hash chain
+
+The current custody log is intentionally in-memory for the first vertical slice.
+Persistent case storage and authenticated investigator actions are next priorities.

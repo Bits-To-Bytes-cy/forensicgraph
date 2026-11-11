@@ -1,12 +1,14 @@
-"""HTTP API for the initial ForensicGraph vertical slice."""
+"""HTTP API for the ForensicGraph investigation workflow."""
 
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from forensicgraph.evidence import sha256_file
+from forensicgraph.timeline import custody_digest, reconstruct_timeline
 
 app = FastAPI(
     title="ForensicGraph API",
@@ -32,6 +34,42 @@ class EvidenceHashRequest(BaseModel):
     source: str = Field(min_length=1)
 
 
+class TimelineEvent(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    event_id: str = Field(min_length=1)
+    occurred_at: datetime
+    source: str = Field(min_length=1)
+    event_type: str = Field(min_length=1)
+    actor: str | None = None
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class TimelineRequest(BaseModel):
+    events: list[TimelineEvent] = Field(min_length=1, max_length=10_000)
+
+
+class CustodyEntry(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    sequence: int = Field(ge=1)
+    action: str = Field(min_length=1)
+    actor: str = Field(min_length=1)
+    evidence_id: str = Field(min_length=1)
+    recorded_at: datetime
+    previous_digest: str
+    digest: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+class CustodyRequest(BaseModel):
+    action: str = Field(min_length=1)
+    actor: str = Field(min_length=1)
+    evidence_id: str = Field(min_length=1)
+
+
+_custody_log: list[CustodyEntry] = []
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "forensicgraph"}
@@ -50,3 +88,64 @@ def hash_evidence(request: EvidenceHashRequest) -> EvidenceManifest:
         sha256=sha256_file(path),
         collected_at=datetime.now(timezone.utc),
     )
+
+
+@app.post("/v1/timeline/reconstruct", response_model=list[TimelineEvent])
+def timeline(request: TimelineRequest) -> list[TimelineEvent]:
+    """Normalize and deterministically order events from multiple evidence sources."""
+    return [
+        TimelineEvent.model_validate(event)
+        for event in reconstruct_timeline(
+            [event.model_dump() for event in request.events]
+        )
+    ]
+
+
+@app.post("/v1/custody", response_model=CustodyEntry)
+def append_custody_entry(request: CustodyRequest) -> CustodyEntry:
+    """Append a hash-chained chain-of-custody entry for an evidence item."""
+    recorded_at = datetime.now(timezone.utc)
+    sequence = len(_custody_log) + 1
+    previous_digest = _custody_log[-1].digest if _custody_log else "0" * 64
+    digest = custody_digest(
+        sequence=sequence,
+        action=request.action,
+        actor=request.actor,
+        evidence_id=request.evidence_id,
+        recorded_at=recorded_at,
+        previous_digest=previous_digest,
+    )
+    entry = CustodyEntry(
+        sequence=sequence,
+        action=request.action,
+        actor=request.actor,
+        evidence_id=request.evidence_id,
+        recorded_at=recorded_at,
+        previous_digest=previous_digest,
+        digest=digest,
+    )
+    _custody_log.append(entry)
+    return entry
+
+
+@app.get("/v1/custody", response_model=list[CustodyEntry])
+def custody_log() -> list[CustodyEntry]:
+    return list(_custody_log)
+
+
+@app.get("/v1/custody/verify")
+def verify_custody_log() -> dict[str, bool | int]:
+    previous_digest = "0" * 64
+    for entry in _custody_log:
+        expected = custody_digest(
+            sequence=entry.sequence,
+            action=entry.action,
+            actor=entry.actor,
+            evidence_id=entry.evidence_id,
+            recorded_at=entry.recorded_at,
+            previous_digest=previous_digest,
+        )
+        if entry.previous_digest != previous_digest or entry.digest != expected:
+            return {"valid": False, "entries": len(_custody_log)}
+        previous_digest = entry.digest
+    return {"valid": True, "entries": len(_custody_log)}
