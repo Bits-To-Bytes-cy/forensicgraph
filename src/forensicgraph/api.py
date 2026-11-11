@@ -35,6 +35,11 @@ class EvidenceHashRequest(BaseModel):
     source: str = Field(min_length=1)
 
 
+class EvidenceVerifyRequest(BaseModel):
+    path: str = Field(min_length=1)
+    expected_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
 class TimelineEvent(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -51,6 +56,11 @@ class TimelineRequest(BaseModel):
 
 
 class AttackGraphRequest(BaseModel):
+    events: list[TimelineEvent] = Field(min_length=1, max_length=10_000)
+
+
+class IncidentReportRequest(BaseModel):
+    case_id: str = Field(min_length=1)
     events: list[TimelineEvent] = Field(min_length=1, max_length=10_000)
 
 
@@ -95,6 +105,20 @@ def hash_evidence(request: EvidenceHashRequest) -> EvidenceManifest:
     )
 
 
+@app.post("/v1/evidence/verify")
+def verify_evidence(request: EvidenceVerifyRequest) -> dict[str, bool | str]:
+    """Re-hash evidence and compare it with a previously recorded digest."""
+    path = Path(request.path)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Evidence file was not found")
+    actual_sha256 = sha256_file(path)
+    return {
+        "valid": actual_sha256 == request.expected_sha256,
+        "expected_sha256": request.expected_sha256,
+        "actual_sha256": actual_sha256,
+    }
+
+
 @app.post("/v1/timeline/reconstruct", response_model=list[TimelineEvent])
 def timeline(request: TimelineRequest) -> list[TimelineEvent]:
     """Normalize and deterministically order events from multiple evidence sources."""
@@ -111,6 +135,26 @@ def attack_graph(request: AttackGraphRequest) -> dict[str, Any]:
     """Return explainable attack-path edges and risk findings."""
     events = [event.model_dump() for event in request.events]
     return analyze_attack_graph(events)
+
+
+@app.post("/v1/cases/report")
+def incident_report(request: IncidentReportRequest) -> dict[str, Any]:
+    """Create a reproducible investigation summary from normalized events."""
+    timeline_events = reconstruct_timeline(
+        [event.model_dump() for event in request.events]
+    )
+    graph = analyze_attack_graph(timeline_events)
+    return {
+        "case_id": request.case_id,
+        "generated_at": datetime.now(timezone.utc),
+        "event_count": len(timeline_events),
+        "timeline": timeline_events,
+        "attack_graph": graph,
+        "custody": {
+            "valid": verify_custody_log()["valid"],
+            "entries": len(_custody_log),
+        },
+    }
 
 
 @app.post("/v1/custody", response_model=CustodyEntry)

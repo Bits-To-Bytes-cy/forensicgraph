@@ -39,8 +39,10 @@ docker run --rm -p 8000:8000 forensicgraph
 ## Initial API
 
 - `POST /v1/evidence/hash` — hash a local lab evidence file
+- `POST /v1/evidence/verify` — detect changes since a recorded hash
 - `POST /v1/timeline/reconstruct` — normalize and sort investigation events
 - `POST /v1/attack-graph/analyze` — build attack paths and risk findings
+- `POST /v1/cases/report` — generate a reproducible incident report
 - `POST /v1/custody` — append a chain-of-custody entry
 - `GET /v1/custody/verify` — verify the in-memory custody hash chain
 

@@ -47,6 +47,28 @@ def test_hash_evidence_rejects_missing_file() -> None:
     assert response.status_code == 404
 
 
+def test_evidence_verification_detects_tampering(tmp_path: Path) -> None:
+    evidence = tmp_path / "event.log"
+    evidence.write_text("original\n", encoding="utf-8")
+    manifest = client.post(
+        "/v1/evidence/hash",
+        json={
+            "path": str(evidence),
+            "evidence_id": "ev-verify",
+            "source": "synthetic-endpoint",
+        },
+    ).json()
+    evidence.write_text("modified\n", encoding="utf-8")
+
+    response = client.post(
+        "/v1/evidence/verify",
+        json={"path": str(evidence), "expected_sha256": manifest["sha256"]},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["valid"] is False
+
+
 def test_timeline_reconstructs_events_in_time_order() -> None:
     response = client.post(
         "/v1/timeline/reconstruct",
@@ -123,3 +145,29 @@ def test_attack_graph_explains_a_privilege_escalation_path() -> None:
     assert len(body["edges"]) == 2
     assert body["actor_risk"] == [{"actor": "user-1", "risk_points": 35}]
     assert body["findings"][0]["severity"] == "high"
+
+
+def test_incident_report_combines_timeline_graph_and_custody() -> None:
+    response = client.post(
+        "/v1/cases/report",
+        json={
+            "case_id": "case-001",
+            "events": [
+                {
+                    "event_id": "evt-1",
+                    "occurred_at": "2026-01-01T10:00:00Z",
+                    "source": "auth",
+                    "event_type": "credential_access",
+                    "actor": "user-1",
+                    "details": {},
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["case_id"] == "case-001"
+    assert body["event_count"] == 1
+    assert body["attack_graph"]["findings"][0]["risk_points"] == 30
+    assert body["custody"]["valid"] is True
