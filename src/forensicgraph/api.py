@@ -1,7 +1,9 @@
 """HTTP API for the ForensicGraph investigation workflow."""
 
 from datetime import datetime, timezone
+import os
 from pathlib import Path
+import sqlite3
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
@@ -10,7 +12,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from forensicgraph.evidence import sha256_file
 from forensicgraph.attack_graph import analyze_attack_graph
-from forensicgraph.timeline import custody_digest, reconstruct_timeline
+from forensicgraph.timeline import reconstruct_timeline
+from forensicgraph.storage import CaseStore
 
 app = FastAPI(
     title="ForensicGraph API",
@@ -18,6 +21,7 @@ app = FastAPI(
     description="Evidence integrity services for authorized digital-forensics investigations.",
 )
 _dashboard = Path(__file__).parent / "static" / "index.html"
+_case_store = CaseStore(os.getenv("FORENSICGRAPH_DB_PATH", "forensicgraph.db"))
 
 
 class EvidenceManifest(BaseModel):
@@ -66,6 +70,16 @@ class IncidentReportRequest(BaseModel):
     events: list[TimelineEvent] = Field(min_length=1, max_length=10_000)
 
 
+class CaseCreateRequest(BaseModel):
+    case_id: str = Field(min_length=1, max_length=120, pattern=r"^[a-zA-Z0-9][a-zA-Z0-9._-]*$")
+    title: str = Field(min_length=1, max_length=200)
+    description: str = Field(default="", max_length=2_000)
+
+
+class CaseEventRequest(BaseModel):
+    events: list[TimelineEvent] = Field(min_length=1, max_length=50_000)
+
+
 class CustodyEntry(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -84,9 +98,6 @@ class CustodyRequest(BaseModel):
     evidence_id: str = Field(min_length=1)
 
 
-_custody_log: list[CustodyEntry] = []
-
-
 @app.get("/", include_in_schema=False)
 def dashboard() -> FileResponse:
     return FileResponse(_dashboard)
@@ -95,6 +106,40 @@ def dashboard() -> FileResponse:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "forensicgraph"}
+
+
+@app.post("/v1/cases", status_code=201)
+def create_case(request: CaseCreateRequest) -> dict[str, Any]:
+    try:
+        return _case_store.create_case(
+            request.case_id, request.title, request.description
+        )
+    except sqlite3.IntegrityError as error:
+        raise HTTPException(status_code=409, detail="Case already exists") from error
+
+
+@app.get("/v1/cases")
+def list_cases() -> list[dict[str, Any]]:
+    return _case_store.list_cases()
+
+
+@app.get("/v1/cases/{case_id}")
+def get_case(case_id: str) -> dict[str, Any]:
+    try:
+        return _case_store.get_case(case_id)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Case was not found") from error
+
+
+@app.post("/v1/cases/{case_id}/events")
+def ingest_case_events(case_id: str, request: CaseEventRequest) -> dict[str, Any]:
+    try:
+        _case_store.get_case(case_id)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Case was not found") from error
+    return _case_store.upsert_events(
+        case_id, [event.model_dump() for event in request.events]
+    )
 
 
 @app.post("/v1/evidence/hash", response_model=EvidenceManifest)
@@ -151,64 +196,39 @@ def incident_report(request: IncidentReportRequest) -> dict[str, Any]:
         [event.model_dump() for event in request.events]
     )
     graph = analyze_attack_graph(timeline_events)
-    return {
+    report = {
         "case_id": request.case_id,
         "generated_at": datetime.now(timezone.utc),
         "event_count": len(timeline_events),
         "timeline": timeline_events,
         "attack_graph": graph,
         "custody": {
-            "valid": verify_custody_log()["valid"],
-            "entries": len(_custody_log),
+            **_case_store.verify_custody(),
         },
     }
+    try:
+        _case_store.save_report(request.case_id, report)
+        _case_store.upsert_events(request.case_id, timeline_events)
+    except KeyError:
+        pass
+    return report
 
 
 @app.post("/v1/custody", response_model=CustodyEntry)
 def append_custody_entry(request: CustodyRequest) -> CustodyEntry:
     """Append a hash-chained chain-of-custody entry for an evidence item."""
-    recorded_at = datetime.now(timezone.utc)
-    sequence = len(_custody_log) + 1
-    previous_digest = _custody_log[-1].digest if _custody_log else "0" * 64
-    digest = custody_digest(
-        sequence=sequence,
-        action=request.action,
-        actor=request.actor,
-        evidence_id=request.evidence_id,
-        recorded_at=recorded_at,
-        previous_digest=previous_digest,
+    return CustodyEntry.model_validate(
+        _case_store.append_custody(
+            request.action, request.actor, request.evidence_id
+        )
     )
-    entry = CustodyEntry(
-        sequence=sequence,
-        action=request.action,
-        actor=request.actor,
-        evidence_id=request.evidence_id,
-        recorded_at=recorded_at,
-        previous_digest=previous_digest,
-        digest=digest,
-    )
-    _custody_log.append(entry)
-    return entry
 
 
 @app.get("/v1/custody", response_model=list[CustodyEntry])
 def custody_log() -> list[CustodyEntry]:
-    return list(_custody_log)
+    return [CustodyEntry.model_validate(entry) for entry in _case_store.list_custody()]
 
 
 @app.get("/v1/custody/verify")
 def verify_custody_log() -> dict[str, bool | int]:
-    previous_digest = "0" * 64
-    for entry in _custody_log:
-        expected = custody_digest(
-            sequence=entry.sequence,
-            action=entry.action,
-            actor=entry.actor,
-            evidence_id=entry.evidence_id,
-            recorded_at=entry.recorded_at,
-            previous_digest=previous_digest,
-        )
-        if entry.previous_digest != previous_digest or entry.digest != expected:
-            return {"valid": False, "entries": len(_custody_log)}
-        previous_digest = entry.digest
-    return {"valid": True, "entries": len(_custody_log)}
+    return _case_store.verify_custody()

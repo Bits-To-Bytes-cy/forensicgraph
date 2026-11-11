@@ -1,0 +1,12 @@
+services:
+  forensicgraph:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      FORENSICGRAPH_DB_PATH: /data/forensicgraph.db
+    volumes:
+      - forensicgraph-data:/data
+
+volumes:
+  forensicgraph-data:

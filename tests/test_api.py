@@ -18,7 +18,54 @@ def test_dashboard_is_available() -> None:
     response = client.get("/")
 
     assert response.status_code == 200
-    assert "ForensicGraph Investigator Console" in response.text
+    assert "Evidence integrity and explainable incident reconstruction workbench" in response.text
+
+
+def test_case_lifecycle_persists_events_and_report() -> None:
+    created = client.post(
+        "/v1/cases",
+        json={
+            "case_id": "case-lifecycle",
+            "title": "Credential compromise",
+            "description": "Synthetic investigation",
+        },
+    )
+    assert created.status_code == 201
+
+    events = [
+        {
+            "event_id": "evt-case",
+            "occurred_at": "2026-01-01T10:00:00Z",
+            "source": "auth",
+            "event_type": "credential_access",
+            "actor": "alice",
+            "details": {},
+        }
+    ]
+    ingested = client.post(
+        "/v1/cases/case-lifecycle/events", json={"events": events}
+    )
+    assert ingested.status_code == 200
+    assert len(ingested.json()["events"]) == 1
+
+    report = client.post(
+        "/v1/cases/report",
+        json={"case_id": "case-lifecycle", "events": events},
+    )
+    assert report.status_code == 200
+    stored = client.get("/v1/cases/case-lifecycle")
+    assert stored.status_code == 200
+    assert stored.json()["report"]["event_count"] == 1
+
+
+def test_duplicate_case_is_rejected() -> None:
+    client.post("/v1/cases", json={"case_id": "case-duplicate", "title": "First"})
+
+    response = client.post(
+        "/v1/cases", json={"case_id": "case-duplicate", "title": "Second"}
+    )
+
+    assert response.status_code == 409
 
 
 def test_hash_evidence_returns_manifest(tmp_path: Path) -> None:
