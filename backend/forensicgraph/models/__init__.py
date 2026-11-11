@@ -1,1 +1,19 @@
-"""SQLAlchemy model boundary reserved for approved domain modules."""
+"""SQLAlchemy model boundary."""
+
+from forensicgraph.models.auth import (
+    Identity,
+    Membership,
+    OAuthState,
+    Organization,
+    RefreshSession,
+    User,
+)
+
+__all__ = [
+    "Identity",
+    "Membership",
+    "OAuthState",
+    "Organization",
+    "RefreshSession",
+    "User",
+]

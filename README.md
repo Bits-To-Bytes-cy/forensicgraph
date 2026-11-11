@@ -4,11 +4,32 @@ ForensicGraph is an evidence-centric Digital Forensics and Incident
 Reconstruction platform focused on identity compromise and cloud data
 exfiltration investigations.
 
+## Phase 1A: Authentication and Organization Management
+
+Phase 1A adds provider-independent OIDC Authorization Code Flow with PKCE,
+validated state/nonce/issuer/audience/signature/expiry, short-lived application
+access tokens, rotated and revocable refresh sessions, identity mapping by
+issuer and subject, organizations, memberships, roles, and tenant-isolated API
+access.
+
+Configure an OIDC provider in `.env` before using `/api/v1/auth/login`. There
+is intentionally no development login bypass.
+
+### Phase 1A API
+
+- `GET|POST /api/v1/auth/login`
+- `GET /api/v1/auth/callback`
+- `POST /api/v1/auth/refresh`
+- `POST /api/v1/auth/logout`
+- `GET /api/v1/auth/me`
+- `POST|GET /api/v1/organizations`
+- `GET /api/v1/organizations/{organization_id}`
+- `POST|GET /api/v1/organizations/{organization_id}/members`
+
 ## Phase 0: Engineering Foundation
 
-This branch intentionally contains infrastructure and application foundations
-only. Evidence ingestion, hashing, chain of custody, AI, graph analysis, and
-timeline reconstruction are deferred to later phases.
+Evidence ingestion, hashing, chain of custody, AI, graph analysis, timeline
+reconstruction, and case management remain deferred to later phases.
 
 ### Repository structure
 
@@ -87,8 +108,11 @@ npm run format
 
 ## Phase 0 limitations
 
-- No domain models or migrations exist yet; the Alembic environment is ready
-  for the first approved model migration.
+- Authentication and organization tables are defined by migration
+  `0002_auth_organizations`; future migrations must preserve both applied
+  revisions.
 - Health checks report dependency availability but do not mutate infrastructure.
 - Credentials are supplied through `.env`; no credentials are committed.
 - The frontend is a navigation-ready shell only.
+- OIDC provider discovery and JWKS validation require a reachable configured
+  identity provider; tests use isolated SQLite and mocked validation boundaries.

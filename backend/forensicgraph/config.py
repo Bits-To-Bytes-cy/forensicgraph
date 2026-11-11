@@ -14,6 +14,14 @@ class Settings(BaseSettings):
     minio_endpoint: str = "http://localhost:9000"
     minio_access_key: str = "forensicgraph"
     minio_secret_key: str = "forensicgraph-secret"
+    oidc_issuer: str = ""
+    oidc_client_id: str = ""
+    oidc_client_secret: str = ""
+    oidc_redirect_uri: str = "http://localhost:8000/api/v1/auth/callback"
+    oidc_scopes: str = "openid profile email"
+    app_secret_key: str = "replace-this-development-secret-with-32-bytes"
+    access_token_minutes: int = 10
+    refresh_token_days: int = 14
 
     model_config = SettingsConfigDict(
         env_file=".env",
