@@ -29,6 +29,13 @@ uvicorn forensicgraph.api:app --reload
 
 The API is then available at `http://127.0.0.1:8000/docs`.
 
+To run the service in a container:
+
+```bash
+docker build -t forensicgraph .
+docker run --rm -p 8000:8000 forensicgraph
+```
+
 ## Initial API
 
 - `POST /v1/evidence/hash` — hash a local lab evidence file
