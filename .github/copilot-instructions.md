@@ -5,10 +5,11 @@ incident reconstruction.
 
 ## Current scope
 
-Phase 1B provides authentication-backed organizations, investigation cases,
-case membership, workflow history, and administrative audit events. Do not add
-evidence ingestion, hashing, TrustLedger, timeline reconstruction, attack
-graphs, PathLogic, AI, or evidence provenance until separately approved.
+Phase 2 provides an authenticated Evidence Vault for original uploads,
+cryptographic inventory hashes, storage read-back verification, derivative
+registration, and an append-only hash-chained TrustLedger. Do not add log
+parsing, normalized events, timeline reconstruction, attack graphs, PathLogic,
+AI, ATT&CK mapping, or evidence provenance until separately approved.
 
 ## Engineering rules
 
@@ -31,3 +32,10 @@ graphs, PathLogic, AI, or evidence provenance until separately approved.
 - Prevent cross-organization foreign-key relationships.
 - Protect the last Case Lead from removal or demotion.
 - Record sensitive administrative operations in `system_audit_events`.
+- Never overwrite original evidence objects.
+- Keep quarantine, original, and derivative object keys distinct.
+- Store SHA-256 and SHA-512 for every original and derivative.
+- Make TrustLedger canonicalization and sequencing deterministic and
+  concurrency-safe.
+- Treat storage/database failures as retryable and preserve orphan-recovery
+  metadata.

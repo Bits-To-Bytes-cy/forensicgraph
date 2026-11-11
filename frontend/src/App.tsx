@@ -2,6 +2,7 @@ import { Link, Route, Routes } from "react-router-dom";
 import CaseCreate from "./pages/CaseCreate";
 import CaseDashboard from "./pages/CaseDashboard";
 import CaseDetails from "./pages/CaseDetails";
+import EvidenceVault from "./pages/EvidenceVault";
 
 function Dashboard() {
   return <CaseDashboard organizationId="demo-organization" />;
@@ -23,6 +24,7 @@ function App() {
           element={<CaseCreate />}
         />
         <Route path="/cases/:caseId" element={<CaseDetails />} />
+        <Route path="/cases/:caseId/evidence" element={<EvidenceVault />} />
       </Routes>
     </>
   );

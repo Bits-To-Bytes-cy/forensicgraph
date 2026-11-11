@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     minio_endpoint: str = "http://localhost:9000"
     minio_access_key: str = "forensicgraph"
     minio_secret_key: str = "forensicgraph-secret"
+    minio_bucket: str = "forensicgraph-evidence"
+    evidence_max_upload_bytes: int = 1_073_741_824
+    evidence_allowed_media_types: str = (
+        "application/octet-stream,application/pdf,application/zip,"
+        "text/plain,text/csv,application/json,image/jpeg,image/png"
+    )
     oidc_issuer: str = ""
     oidc_client_id: str = ""
     oidc_client_secret: str = ""

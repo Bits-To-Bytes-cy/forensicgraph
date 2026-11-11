@@ -16,6 +16,23 @@ Phase 1B adds organization-scoped investigation cases, generated case numbers,
 case roles, transactional assignments, explicit status transitions, immutable
 status history, administrative audit events, and a React case dashboard.
 
+Phase 2 adds the Evidence Vault: bounded streamed uploads through quarantine,
+immutable original objects, SHA-256/SHA-512 metadata, read-back verification,
+append-only hash-chained TrustLedger custody events, integrity history, and
+derivative/working-copy registration.
+
+### Phase 2 Evidence API
+
+- `POST /api/v1/cases/{case_id}/evidence/uploads`
+- `PUT /api/v1/evidence/uploads/{upload_id}/content`
+- `POST /api/v1/evidence/uploads/{upload_id}/complete`
+- `GET /api/v1/cases/{case_id}/evidence`
+- `GET /api/v1/evidence/{evidence_id}`
+- `POST /api/v1/evidence/{evidence_id}/verify`
+- `GET /api/v1/evidence/{evidence_id}/custody`
+- `GET /api/v1/evidence/{evidence_id}/download`
+- `POST|GET /api/v1/evidence/{evidence_id}/derivatives`
+
 ### Phase 1B API
 
 - `POST /api/v1/organizations/{organization_id}/cases`
@@ -44,8 +61,9 @@ is intentionally no development login bypass.
 
 ## Phase 0: Engineering Foundation
 
-Evidence ingestion, hashing, chain of custody, AI, graph analysis, timeline
-reconstruction, and case management remain deferred to later phases.
+Log parsing, normalization, timeline reconstruction, chain analysis, AI,
+graph analysis, ATT&CK mapping, and provenance remain deferred to later
+phases.
 
 ### Repository structure
 

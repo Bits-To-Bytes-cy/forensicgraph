@@ -14,6 +14,13 @@ from forensicgraph.models.cases import (
     CaseStatusHistory,
     SystemAuditEvent,
 )
+from forensicgraph.models.evidence import (
+    EvidenceCustodyEvent,
+    EvidenceDerivative,
+    EvidenceIntegrityCheck,
+    EvidenceItem,
+    EvidenceUploadSession,
+)
 
 __all__ = [
     "Identity",
@@ -26,4 +33,9 @@ __all__ = [
     "CaseMembership",
     "CaseStatusHistory",
     "SystemAuditEvent",
+    "EvidenceCustodyEvent",
+    "EvidenceDerivative",
+    "EvidenceIntegrityCheck",
+    "EvidenceItem",
+    "EvidenceUploadSession",
 ]

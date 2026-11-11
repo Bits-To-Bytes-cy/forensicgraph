@@ -50,6 +50,9 @@ export default function CaseDetails() {
       <Link to="/" className="back">
         ← Case dashboard
       </Link>
+      <Link to={`/cases/${caseId}/evidence`} className="button secondary">
+        Evidence Vault
+      </Link>
       <div className="page-heading">
         <div>
           <p className="eyebrow">
