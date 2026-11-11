@@ -12,6 +12,22 @@ access tokens, rotated and revocable refresh sessions, identity mapping by
 issuer and subject, organizations, memberships, roles, and tenant-isolated API
 access.
 
+Phase 1B adds organization-scoped investigation cases, generated case numbers,
+case roles, transactional assignments, explicit status transitions, immutable
+status history, administrative audit events, and a React case dashboard.
+
+### Phase 1B API
+
+- `POST /api/v1/organizations/{organization_id}/cases`
+- `GET /api/v1/organizations/{organization_id}/cases`
+- `GET /api/v1/organizations/{organization_id}/cases/{case_id}`
+- `GET /api/v1/cases/{case_id}`
+- `PATCH /api/v1/cases/{case_id}`
+- `POST|GET /api/v1/cases/{case_id}/members`
+- `DELETE /api/v1/cases/{case_id}/members/{user_id}`
+- `POST /api/v1/cases/{case_id}/status`
+- `GET /api/v1/cases/{case_id}/history`
+
 Configure an OIDC provider in `.env` before using `/api/v1/auth/login`. There
 is intentionally no development login bypass.
 

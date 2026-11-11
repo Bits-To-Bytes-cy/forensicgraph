@@ -8,6 +8,12 @@ from forensicgraph.models.auth import (
     RefreshSession,
     User,
 )
+from forensicgraph.models.cases import (
+    Case,
+    CaseMembership,
+    CaseStatusHistory,
+    SystemAuditEvent,
+)
 
 __all__ = [
     "Identity",
@@ -16,4 +22,8 @@ __all__ = [
     "Organization",
     "RefreshSession",
     "User",
+    "Case",
+    "CaseMembership",
+    "CaseStatusHistory",
+    "SystemAuditEvent",
 ]
