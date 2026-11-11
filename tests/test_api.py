@@ -14,6 +14,13 @@ def test_health() -> None:
     assert response.json()["status"] == "ok"
 
 
+def test_dashboard_is_available() -> None:
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "ForensicGraph Investigator Console" in response.text
+
+
 def test_hash_evidence_returns_manifest(tmp_path: Path) -> None:
     evidence = tmp_path / "event.log"
     evidence.write_text("synthetic authorized lab evidence\n", encoding="utf-8")

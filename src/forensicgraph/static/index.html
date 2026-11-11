@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ForensicGraph Investigator Console</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+      body { background: #0b1220; color: #e5e7eb; margin: 0; }
+      main { max-width: 1180px; margin: auto; padding: 28px; }
+      h1 { margin-bottom: 4px; } .muted { color: #94a3b8; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+      .card { background: #111b2e; border: 1px solid #263653; border-radius: 12px; padding: 18px; }
+      textarea, input { width: 100%; box-sizing: border-box; background: #0b1220; color: #e5e7eb;
+        border: 1px solid #3b4b6a; border-radius: 8px; padding: 10px; margin: 7px 0 12px; }
+      textarea { min-height: 270px; font-family: ui-monospace, monospace; }
+      button { background: #38bdf8; color: #082f49; border: 0; border-radius: 8px; padding: 10px 14px;
+        font-weight: 700; cursor: pointer; margin-right: 8px; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 470px; overflow: auto; }
+      .status { padding: 10px 0; color: #a7f3d0; } @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>ForensicGraph Investigator Console</h1>
+      <p class="muted">Synthetic-data prototype for evidence integrity, timeline reconstruction, and explainable attack paths.</p>
+      <div class="grid">
+        <section class="card">
+          <label for="case">Case ID</label>
+          <input id="case" value="demo-case-001">
+          <label for="events">Normalized events (JSON array)</label>
+          <textarea id="events"></textarea>
+          <button onclick="runReport()">Generate report</button>
+          <button onclick="loadDemo()">Load demo</button>
+          <div id="status" class="status"></div>
+        </section>
+        <section class="card">
+          <h2>Investigation report</h2>
+          <pre id="output">Run a report to see the timeline, graph, findings, and custody status.</pre>
+        </section>
+      </div>
+    </main>
+    <script>
+      const demo = [
+        {event_id:"evt-001",occurred_at:"2026-01-01T10:00:00Z",source:"email",event_type:"Login",
+          actor:"alice",details:{source_node:"internet",target_node:"vpn"}},
+        {event_id:"evt-002",occurred_at:"2026-01-01T10:01:00Z",source:"endpoint",
+          event_type:"credential_access",actor:"alice",details:{source_node:"vpn",target_node:"workstation"}},
+        {event_id:"evt-003",occurred_at:"2026-01-01T10:03:00Z",source:"cloudtrail",
+          event_type:"privilege_escalation",actor:"alice",details:{source_node:"workstation",target_node:"admin-role"}},
+        {event_id:"evt-004",occurred_at:"2026-01-01T10:05:00Z",source:"cloudtrail",
+          event_type:"mass_download",actor:"alice",details:{source_node:"admin-role",target_node:"s3-sensitive-data"}}
+      ];
+      function loadDemo() { document.getElementById("events").value = JSON.stringify(demo, null, 2); }
+      async function runReport() {
+        const status = document.getElementById("status"), output = document.getElementById("output");
+        try {
+          const response = await fetch("/v1/cases/report", {method:"POST",
+            headers:{"content-type":"application/json"},
+            body: JSON.stringify({case_id:document.getElementById("case").value,
+              events:JSON.parse(document.getElementById("events").value)})});
+          const body = await response.json();
+          if (!response.ok) throw new Error(body.detail || "Request failed");
+          output.textContent = JSON.stringify(body, null, 2);
+          status.textContent = "Report generated successfully.";
+        } catch (error) { status.textContent = error.message; }
+      }
+      loadDemo();
+    </script>
+  </body>
+</html>

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from forensicgraph.evidence import sha256_file
@@ -16,6 +17,7 @@ app = FastAPI(
     version="0.1.0",
     description="Evidence integrity services for authorized digital-forensics investigations.",
 )
+_dashboard = Path(__file__).parent / "static" / "index.html"
 
 
 class EvidenceManifest(BaseModel):
@@ -83,6 +85,11 @@ class CustodyRequest(BaseModel):
 
 
 _custody_log: list[CustodyEntry] = []
+
+
+@app.get("/", include_in_schema=False)
+def dashboard() -> FileResponse:
+    return FileResponse(_dashboard)
 
 
 @app.get("/health")

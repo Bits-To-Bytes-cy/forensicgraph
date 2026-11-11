@@ -28,6 +28,7 @@ uvicorn forensicgraph.api:app --reload
 ```
 
 The API is then available at `http://127.0.0.1:8000/docs`.
+The investigator dashboard is available at `http://127.0.0.1:8000/`.
 
 To run the service in a container:
 
@@ -43,6 +44,9 @@ docker run --rm -p 8000:8000 forensicgraph
 - `POST /v1/timeline/reconstruct` — normalize and sort investigation events
 - `POST /v1/attack-graph/analyze` — build attack paths and risk findings
 - `POST /v1/cases/report` — generate a reproducible incident report
+
+The `examples/synthetic-incident.json` file contains a safe, repeatable attack
+scenario for demonstrations and testing.
 - `POST /v1/custody` — append a chain-of-custody entry
 - `GET /v1/custody/verify` — verify the in-memory custody hash chain
 
