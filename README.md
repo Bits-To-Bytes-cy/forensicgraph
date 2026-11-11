@@ -1,68 +1,94 @@
 # ForensicGraph
 
-ForensicGraph is a defensive digital-forensics platform for preserving evidence
-integrity, reconstructing incident timelines, and explaining attack paths.
+ForensicGraph is an evidence-centric Digital Forensics and Incident
+Reconstruction platform focused on identity compromise and cloud data
+exfiltration investigations.
 
-## Project status
+## Phase 0: Engineering Foundation
 
-The initial vertical slice provides:
+This branch intentionally contains infrastructure and application foundations
+only. Evidence ingestion, hashing, chain of custody, AI, graph analysis, and
+timeline reconstruction are deferred to later phases.
 
-- A FastAPI service with health and evidence-manifest endpoints
-- SHA-256 hashing for evidence files
-- A tamper-evident manifest model suitable for later chain-of-custody work
-- Deterministic timeline reconstruction across multiple evidence sources
-- Hash-chained chain-of-custody entries with integrity verification
-- Explainable attack-graph edges and actor risk findings
-- SQLite-backed case and event persistence
-- Browser investigator workbench for creating cases and generating reports
-- Focused tests for hashing and API behavior
+### Repository structure
 
-This project is intended for authorized investigations and synthetic lab data.
+```text
+backend/
+  forensicgraph/
+    api/                 # HTTP boundary
+    models/              # SQLAlchemy model boundary
+    repositories/        # persistence adapters
+    services/            # application use cases
+    app.py               # FastAPI entrypoint
+    config.py            # environment-backed settings
+    db.py                # SQLAlchemy engine/session
+    health.py            # PostgreSQL, Redis, MinIO checks
+  migrations/            # Alembic environment and revisions
+frontend/
+  src/                   # React + TypeScript + Vite shell
+backend/tests/            # pytest foundation tests
+docker-compose.yml       # backend, frontend, PostgreSQL, Redis, MinIO
+```
 
 ## Local development
 
+Copy `.env.example` to `.env` and replace all `change-me` values:
+
 ```bash
-python -m venv .venv
+cp .env.example .env
+python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-pytest
-uvicorn forensicgraph.api:app --reload
+alembic -c backend/alembic.ini upgrade head
+uvicorn forensicgraph.app:app --app-dir backend --reload
 ```
 
-The API is then available at `http://127.0.0.1:8000/docs`.
-The investigator dashboard is available at `http://127.0.0.1:8000/`.
-
-To run the service in a container:
+In another terminal:
 
 ```bash
-docker build -t forensicgraph .
-docker run --rm -p 8000:8000 forensicgraph
+cd frontend
+npm install
+npm run dev
 ```
 
-## Initial API
+The backend API is available at `http://localhost:8000/health` and the
+frontend at `http://localhost:5173`.
 
-- `POST /v1/evidence/hash` — hash a local lab evidence file
-- `POST /v1/evidence/verify` — detect changes since a recorded hash
-- `POST /v1/timeline/reconstruct` — normalize and sort investigation events
-- `POST /v1/attack-graph/analyze` — build attack paths and risk findings
-- `POST /v1/cases/report` — generate a reproducible incident report
-- `POST /v1/cases` / `GET /v1/cases` — create and list persisted cases
-- `POST /v1/cases/{case_id}/events` — ingest normalized evidence events
+## Docker Compose
 
-The `examples/synthetic-incident.json` file contains a safe, repeatable attack
-scenario for demonstrations and testing.
-- `POST /v1/custody` — append a chain-of-custody entry
-- `GET /v1/custody/verify` — verify the in-memory custody hash chain
+```bash
+cp .env.example .env
+docker compose config
+docker compose up --build
+```
 
-Case metadata, events, generated reports, and the custody ledger are persisted
-in SQLite. Set
-`FORENSICGRAPH_DB_PATH` to a durable path in production; Docker Compose mounts
-`/data` as a named volume.
+Services:
 
-## CV-ready capabilities demonstrated
+| Service | Purpose | Port |
+| --- | --- | --- |
+| `backend` | FastAPI application | 8000 |
+| `frontend` | React/Vite production build served by Nginx | 5173 |
+| `postgres` | Application database | 5432 |
+| `redis` | Cache/task-queue foundation | 6379 |
+| `minio` | S3-compatible object-storage foundation | 9000 / 9001 |
 
-This prototype demonstrates evidence integrity engineering, normalized
-multi-source event modeling, deterministic forensic timelines, explainable
-attack-path analysis, hash-chained custody, persistent case management, REST
-API design, browser UX, containerization, and continuous testing. The included
-synthetic scenario is safe to reproduce in a lab without using real victim data.
+## Quality checks
+
+```bash
+pytest
+ruff check backend
+ruff format --check backend
+cd frontend
+npm run build
+npm run lint
+npm run test
+npm run format
+```
+
+## Phase 0 limitations
+
+- No domain models or migrations exist yet; the Alembic environment is ready
+  for the first approved model migration.
+- Health checks report dependency availability but do not mutate infrastructure.
+- Credentials are supplied through `.env`; no credentials are committed.
+- The frontend is a navigation-ready shell only.
