@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from forensicgraph.evidence import sha256_file
+from forensicgraph.attack_graph import analyze_attack_graph
 from forensicgraph.timeline import custody_digest, reconstruct_timeline
 
 app = FastAPI(
@@ -46,6 +47,10 @@ class TimelineEvent(BaseModel):
 
 
 class TimelineRequest(BaseModel):
+    events: list[TimelineEvent] = Field(min_length=1, max_length=10_000)
+
+
+class AttackGraphRequest(BaseModel):
     events: list[TimelineEvent] = Field(min_length=1, max_length=10_000)
 
 
@@ -99,6 +104,13 @@ def timeline(request: TimelineRequest) -> list[TimelineEvent]:
             [event.model_dump() for event in request.events]
         )
     ]
+
+
+@app.post("/v1/attack-graph/analyze")
+def attack_graph(request: AttackGraphRequest) -> dict[str, Any]:
+    """Return explainable attack-path edges and risk findings."""
+    events = [event.model_dump() for event in request.events]
+    return analyze_attack_graph(events)
 
 
 @app.post("/v1/custody", response_model=CustodyEntry)

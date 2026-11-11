@@ -12,6 +12,7 @@ The initial vertical slice provides:
 - A tamper-evident manifest model suitable for later chain-of-custody work
 - Deterministic timeline reconstruction across multiple evidence sources
 - Hash-chained chain-of-custody entries with integrity verification
+- Explainable attack-graph edges and actor risk findings
 - Focused tests for hashing and API behavior
 
 This project is intended for authorized investigations and synthetic lab data.
@@ -32,6 +33,7 @@ The API is then available at `http://127.0.0.1:8000/docs`.
 
 - `POST /v1/evidence/hash` — hash a local lab evidence file
 - `POST /v1/timeline/reconstruct` — normalize and sort investigation events
+- `POST /v1/attack-graph/analyze` — build attack paths and risk findings
 - `POST /v1/custody` — append a chain-of-custody entry
 - `GET /v1/custody/verify` — verify the in-memory custody hash chain
 

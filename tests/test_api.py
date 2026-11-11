@@ -85,3 +85,41 @@ def test_custody_entries_form_a_verifiable_hash_chain() -> None:
     assert first.status_code == 200
     assert second.json()["previous_digest"] == first.json()["digest"]
     assert client.get("/v1/custody/verify").json() == {"valid": True, "entries": 2}
+
+
+def test_attack_graph_explains_a_privilege_escalation_path() -> None:
+    response = client.post(
+        "/v1/attack-graph/analyze",
+        json={
+            "events": [
+                {
+                    "event_id": "evt-login",
+                    "occurred_at": "2026-01-01T10:00:00Z",
+                    "source": "auth",
+                    "event_type": "Login",
+                    "actor": "user-1",
+                    "details": {
+                        "source_node": "internet",
+                        "target_node": "vpn",
+                    },
+                },
+                {
+                    "event_id": "evt-escalate",
+                    "occurred_at": "2026-01-01T10:01:00Z",
+                    "source": "endpoint",
+                    "event_type": "privilege_escalation",
+                    "actor": "user-1",
+                    "details": {
+                        "source_node": "vpn",
+                        "target_node": "admin-role",
+                    },
+                },
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["edges"]) == 2
+    assert body["actor_risk"] == [{"actor": "user-1", "risk_points": 35}]
+    assert body["findings"][0]["severity"] == "high"
