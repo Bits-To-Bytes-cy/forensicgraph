@@ -21,6 +21,19 @@ immutable original objects, SHA-256/SHA-512 metadata, read-back verification,
 append-only hash-chained TrustLedger custody events, integrity history, and
 derivative/working-copy registration.
 
+Phase 3 adds explicit, versioned source parsers for Windows EVTX, Sysmon EVTX,
+Microsoft Entra sign-in and directory audit exports, and Microsoft 365
+Unified Audit Log exports. Processing runs preserve raw records, stable source
+locators, parser metadata, progress, and controlled errors without modifying
+original evidence.
+
+### Phase 3 Processing API
+
+- `POST /api/v1/evidence/{evidence_id}/ingest`
+- `GET /api/v1/processing-runs/{run_id}`
+- `GET /api/v1/processing-runs/{run_id}/errors`
+- `GET /api/v1/cases/{case_id}/processing-runs`
+
 ### Phase 2 Evidence API
 
 - `POST /api/v1/cases/{case_id}/evidence/uploads`
@@ -61,9 +74,9 @@ is intentionally no development login bypass.
 
 ## Phase 0: Engineering Foundation
 
-Log parsing, normalization, timeline reconstruction, chain analysis, AI,
-graph analysis, ATT&CK mapping, and provenance remain deferred to later
-phases.
+Normalization, ChronoTrace, entity resolution, timeline reconstruction,
+chain analysis, AI, graph analysis, ATT&CK mapping, and provenance remain
+deferred to later phases.
 
 ### Repository structure
 

@@ -5,11 +5,11 @@ incident reconstruction.
 
 ## Current scope
 
-Phase 2 provides an authenticated Evidence Vault for original uploads,
-cryptographic inventory hashes, storage read-back verification, derivative
-registration, and an append-only hash-chained TrustLedger. Do not add log
-parsing, normalized events, timeline reconstruction, attack graphs, PathLogic,
-AI, ATT&CK mapping, or evidence provenance until separately approved.
+Phase 3 provides evidence-preserving source ingestion with explicit,
+versioned parsers, processing-run lifecycle, persisted raw records, stable
+source locators, and controlled parser errors. Do not add normalization,
+timeline reconstruction, attack graphs, PathLogic, AI, ATT&CK mapping, or
+evidence provenance until separately approved.
 
 ## Engineering rules
 
@@ -39,3 +39,8 @@ AI, ATT&CK mapping, or evidence provenance until separately approved.
   concurrency-safe.
 - Treat storage/database failures as retryable and preserve orphan-recovery
   metadata.
+- Never mutate original evidence during parsing.
+- Require an explicit parser name; never silently guess between formats.
+- Persist parser name/version, evidence ID, processing-run ID, stable locator,
+  and raw payload for every extracted record.
+- Bound parser batches and persist processing progress and errors.

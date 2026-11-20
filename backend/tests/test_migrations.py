@@ -13,3 +13,10 @@ def test_phase2_migration_preserves_phase1b():
 
     assert revision.revision == "0004_evidence_vault"
     assert revision.down_revision == "0003_case_management"
+
+
+def test_phase3_migration_preserves_phase2():
+    revision = importlib.import_module("migrations.versions.0005_processing_ingestion")
+
+    assert revision.revision == "0005_processing_ingestion"
+    assert revision.down_revision == "0004_evidence_vault"

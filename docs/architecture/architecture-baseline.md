@@ -49,8 +49,24 @@ Evidence operations use the existing case and organization authorization
 boundary. Original evidence is never exposed through direct object-storage
 credentials; API downloads stream through the backend after authorization.
 
+## Phase 3 boundaries
+
+Evidence ingestion owns:
+
+- explicit provider-independent parser contracts and registry;
+- Windows EVTX and Sysmon EVTX adapters;
+- Microsoft Entra sign-in and directory-audit JSON/CSV adapters;
+- Microsoft 365 Unified Audit Log JSON/CSV adapters;
+- bounded processing runs with progress, attempts, controlled reprocessing,
+  persisted errors, and raw-record preservation.
+
+Raw records retain the source evidence ID, processing-run ID, parser name and
+version, stable source locator, canonical raw payload, and payload hash.
+Parsers never modify original Evidence Vault objects or create normalized
+events.
+
 ## Deferred capabilities
 
-Log parsing, normalized events, timeline reconstruction, attack graphs,
-PathLogic, AI assistance, ATT&CK mapping, and evidence provenance are outside
-this baseline and must not be added as part of Phase 2.
+Normalized events, ChronoTrace, entity resolution, timeline reconstruction,
+attack graphs, PathLogic, AI assistance, ATT&CK mapping, and evidence
+provenance are outside this baseline and must not be added as part of Phase 3.

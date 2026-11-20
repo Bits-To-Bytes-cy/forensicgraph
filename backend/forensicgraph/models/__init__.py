@@ -21,6 +21,7 @@ from forensicgraph.models.evidence import (
     EvidenceItem,
     EvidenceUploadSession,
 )
+from forensicgraph.models.processing import ProcessingError, ProcessingRun, RawRecord
 
 __all__ = [
     "Identity",
@@ -38,4 +39,7 @@ __all__ = [
     "EvidenceIntegrityCheck",
     "EvidenceItem",
     "EvidenceUploadSession",
+    "ProcessingError",
+    "ProcessingRun",
+    "RawRecord",
 ]
